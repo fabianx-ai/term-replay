@@ -341,12 +341,7 @@ async fn pty_reader_task(
             unsafe {
                 let result = libc::read(fd, buf.as_mut_ptr() as *mut libc::c_void, buf.len());
                 if result == -1 {
-                    let errno = *libc::__error();
-                    if errno == libc::EAGAIN || errno == libc::EWOULDBLOCK {
-                        return Err(std::io::Error::from_raw_os_error(errno));
-                    } else {
-                        return Err(std::io::Error::from_raw_os_error(errno));
-                    }
+                    return Err(std::io::Error::last_os_error());
                 }
                 Ok(result as usize)
             }
@@ -1466,12 +1461,7 @@ async fn handle_client(
                                     unsafe {
                                         let result = libc::write(fd, data_to_forward.as_ptr() as *const libc::c_void, data_to_forward.len());
                                         if result == -1 {
-                                            let errno = *libc::__error();
-                                            if errno == libc::EAGAIN || errno == libc::EWOULDBLOCK {
-                                                return Err(std::io::Error::from_raw_os_error(errno));
-                                            } else {
-                                                return Err(std::io::Error::from_raw_os_error(errno));
-                                            }
+                                            return Err(std::io::Error::last_os_error());
                                         }
                                         Ok(result as usize)
                                     }
