@@ -1,6 +1,20 @@
 # Shared defaults for the asciinema helper scripts. Sourced, not executed.
 # Expects the sourcing script's $1 to be the session name (optional).
 
+# Strip a -f (foreground) flag from any position in the caller's args;
+# set -- in a sourced file rewrites the caller's positional parameters.
+FOREGROUND=0
+_args=()
+for _a in "$@"; do
+    if [ "$_a" = "-f" ]; then
+        FOREGROUND=1
+    else
+        _args+=("$_a")
+    fi
+done
+set -- "${_args[@]}"
+unset _a _args
+
 # Unix sockets live here; the path must stay short (SUN_LEN caps socket
 # paths at ~108 bytes, deep directories fail to bind).
 export TERM_REPLAY_DIR="${TERM_REPLAY_DIR:-${XDG_RUNTIME_DIR:-/tmp}/term-replay}"
@@ -45,3 +59,19 @@ require() {
 
 require term-replay
 require asciinema
+
+# Launch "$@" in the background, logging to $1. Prints the PID and
+# fails loudly (with the log tail) if the process dies right away.
+launch_background() {
+    local log="$1"
+    shift
+    nohup "$@" >"$log" 2>&1 </dev/null &
+    BG_PID=$!
+    sleep 1
+    if ! kill -0 "$BG_PID" 2>/dev/null; then
+        echo "error: '$1' exited immediately; log tail:" >&2
+        tail -5 "$log" >&2
+        exit 1
+    fi
+    echo "started in background: pid $BG_PID, log $log" >&2
+}

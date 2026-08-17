@@ -13,10 +13,10 @@ channel at all.
 ## Quickstart
 
 ```sh
-# Terminal 1 — the session being streamed (e.g. what kimi works in):
+# The session being streamed (e.g. what kimi works in):
 ./start-session.sh demo bash -l
 
-# Terminal 2 — pick any combination:
+# Then pick any combination:
 ./attach.sh demo          # drive the session (read-write, detach: Ctrl-\)
 ./watch.sh demo           # look over the shoulder (read-only)
 ./record.sh demo          # -> ~/casts/demo-<timestamp>.cast
@@ -25,10 +25,16 @@ channel at all.
 ./stop-stream.sh demo     # stop streams/recordings; session keeps running
 ```
 
+`start-session.sh`, `stream-local.sh` and `stream-remote.sh` run in the
+background by default, logging to `$TERM_REPLAY_DIR/<session>-<script>.log`;
+pass `-f` (any position) to run in the foreground instead.
+`stream-remote.sh` prints the public stream URL in both modes.
+
 `stop-stream.sh` SIGTERMs this user's asciinema processes watching the
 session (exact `-S` match), letting them close streams and finalize
 casts. `-n` as second argument lists what would be stopped without
-stopping it.
+stopping it. Stop a background session server via the PID in
+`$TERM_REPLAY_DIR/<session>.pid`.
 
 Cast files combine a human name and a machine name:
 `[human]--[session]-[timestamp].cast`. The human part is the third
