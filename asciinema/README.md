@@ -22,7 +22,13 @@ channel at all.
 ./record.sh demo          # -> ~/casts/demo-<timestamp>.cast
 ./stream-local.sh demo    # live at http://127.0.0.1:7682/ + recording
 ./stream-remote.sh demo "Porting UML to ARM64"   # PUBLIC stream + recording
+./stop-stream.sh demo     # stop streams/recordings; session keeps running
 ```
+
+`stop-stream.sh` SIGTERMs this user's asciinema processes watching the
+session (exact `-S` match), letting them close streams and finalize
+casts. `-n` as second argument lists what would be stopped without
+stopping it.
 
 Cast files combine a human name and a machine name:
 `[human]--[session]-[timestamp].cast`. The human part is the third
