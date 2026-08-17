@@ -20,8 +20,20 @@ WINDOW_SIZE="${WINDOW_SIZE:-120x30}"
 CAST_DIR="${CAST_DIR:-$HOME/casts}"
 mkdir -p "$CAST_DIR"
 
+# Cast names combine a human name with a machine name: the optional $1
+# becomes a sanitized human-readable prefix, the session+timestamp part
+# stays machine-parsable: [human]--[session]-[timestamp].cast
 new_cast_path() {
-    echo "$CAST_DIR/$SESSION-$(date +%Y%m%d-%H%M%S).cast"
+    local human="${1:-}"
+    local machine="$SESSION-$(date +%Y%m%d-%H%M%S)"
+    if [ -n "$human" ]; then
+        human="$(printf '%s' "$human" | tr -cs 'A-Za-z0-9._-' '-' | sed 's/^-*//; s/-*$//')"
+    fi
+    if [ -n "$human" ]; then
+        echo "$CAST_DIR/$human--$machine.cast"
+    else
+        echo "$CAST_DIR/$machine.cast"
+    fi
 }
 
 require() {

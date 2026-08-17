@@ -24,6 +24,13 @@ channel at all.
 ./stream-remote.sh demo "Porting UML to ARM64"   # PUBLIC stream + recording
 ```
 
+Cast files combine a human name and a machine name:
+`[human]--[session]-[timestamp].cast`. The human part is the third
+argument (`stream-local.sh demo 127.0.0.1:7682 uml-day-1`), is
+sanitized for filesystem safety, and is omitted from the name when not
+given. For `stream-remote.sh` it defaults to the title, so the example
+above records to `Porting-UML-to-ARM64--demo-<timestamp>.cast`.
+
 `stream-remote.sh` needs a one-time `asciinema auth` (open the printed
 URL while logged in to your asciinema.org account). It prints the public
 stream URL when it starts.
