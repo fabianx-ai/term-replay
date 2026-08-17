@@ -29,8 +29,10 @@ if [ "$FOREGROUND" = 1 ]; then
         --window-size "$WINDOW_SIZE" -t "$TITLE" -c "$WATCH_CMD"
 fi
 LOG="$TERM_REPLAY_DIR/$SESSION-stream-remote.log"
+# Explicit --headless: without it a backgrounded asciinema that still
+# has a controlling TTY paints the session onto the launching terminal.
 launch_background "$LOG" \
-    asciinema session --stream-remote --output-file "$CAST" \
+    asciinema session --headless --stream-remote --output-file "$CAST" \
     --window-size "$WINDOW_SIZE" -t "$TITLE" -c "$WATCH_CMD"
 
 # Surface the public URL from the log (the whole point of streaming).

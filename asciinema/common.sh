@@ -62,10 +62,13 @@ require asciinema
 
 # Launch "$@" in the background, logging to $1. Prints the PID and
 # fails loudly (with the log tail) if the process dies right away.
+# setsid detaches from the controlling terminal: without it the process
+# would paint on the launching terminal and die of SIGHUP when that
+# terminal closes (asciinema installs its own handler, defeating nohup).
 launch_background() {
     local log="$1"
     shift
-    nohup "$@" >"$log" 2>&1 </dev/null &
+    setsid "$@" >"$log" 2>&1 </dev/null &
     BG_PID=$!
     sleep 1
     if ! kill -0 "$BG_PID" 2>/dev/null; then

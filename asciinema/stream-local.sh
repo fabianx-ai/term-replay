@@ -21,6 +21,8 @@ if [ "$FOREGROUND" = 1 ]; then
     exec asciinema session --stream-local "$ADDR" --output-file "$CAST" \
         --window-size "$WINDOW_SIZE" -c "$WATCH_CMD"
 fi
+# Explicit --headless: without it a backgrounded asciinema that still
+# has a controlling TTY paints the session onto the launching terminal.
 launch_background "$TERM_REPLAY_DIR/$SESSION-stream-local.log" \
-    asciinema session --stream-local "$ADDR" --output-file "$CAST" \
+    asciinema session --headless --stream-local "$ADDR" --output-file "$CAST" \
     --window-size "$WINDOW_SIZE" -c "$WATCH_CMD"
