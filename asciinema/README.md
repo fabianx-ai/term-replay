@@ -30,6 +30,12 @@ background by default, logging to `$TERM_REPLAY_DIR/<session>-<script>.log`;
 pass `-f` (any position) to run in the foreground instead.
 `stream-remote.sh` prints the public stream URL in both modes.
 
+A session keeps one stable public URL across stream restarts: the first
+background `stream-remote.sh` run saves the server-allocated stream ID
+to `~/.config/term-replay/streams/<session>.stream-id` (override the
+directory with `STREAM_ID_DIR`) and later runs reuse it. Delete the ID
+file to get a fresh URL.
+
 `stop-stream.sh` SIGTERMs this user's asciinema processes watching the
 session (exact `-S` match), letting them close streams and finalize
 casts. `-n` as second argument lists what would be stopped without
