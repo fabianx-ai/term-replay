@@ -15,10 +15,16 @@ done
 set -- "${_args[@]}"
 unset _a _args
 
-# Unix sockets live here; the path must stay short (SUN_LEN caps socket
-# paths at ~108 bytes, deep directories fail to bind).
-export TERM_REPLAY_DIR="${TERM_REPLAY_DIR:-${XDG_RUNTIME_DIR:-/tmp}/term-replay}"
+# Sockets, PID files AND session logs (the replay history) live here —
+# so it must be durable storage, not tmpfs, or history dies with a
+# reboot. It must also stay short: SUN_LEN caps socket paths at ~108
+# bytes, deep directories fail to bind.
+export TERM_REPLAY_DIR="${TERM_REPLAY_DIR:-$HOME/.term-replay}"
 mkdir -p "$TERM_REPLAY_DIR"
+if [ "${#TERM_REPLAY_DIR}" -gt 80 ]; then
+    echo "warning: TERM_REPLAY_DIR is ${#TERM_REPLAY_DIR} chars; socket" \
+         "paths near 108 bytes fail to bind (SUN_LEN)" >&2
+fi
 
 SESSION="${1:-term-replay}"
 

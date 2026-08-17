@@ -59,14 +59,18 @@ stream URL when it starts.
 
 | Variable          | Default                             | Meaning                        |
 |-------------------|-------------------------------------|--------------------------------|
-| `TERM_REPLAY_DIR` | `$XDG_RUNTIME_DIR/term-replay`      | sockets + logs (keep it short) |
+| `TERM_REPLAY_DIR` | `~/.term-replay`                    | sockets + session history logs (durable, keep it short) |
 | `WINDOW_SIZE`     | `120x30`                            | fixed stream/recording size    |
 | `CAST_DIR`        | `~/casts`                           | where recordings land          |
 
 ## Gotchas these scripts already handle
 
 - **Socket path length:** Unix sockets cap at ~108 bytes (`SUN_LEN`);
-  `TERM_REPLAY_DIR` defaults to the short `$XDG_RUNTIME_DIR/term-replay`.
+  `TERM_REPLAY_DIR` defaults to the short `~/.term-replay`, and
+  common.sh warns when an override gets close to the limit.
+- **Durable history:** session logs (the replay history) live in
+  `TERM_REPLAY_DIR` next to the sockets — keep it on real storage, not
+  tmpfs like `$XDG_RUNTIME_DIR`, or history vanishes on reboot.
 - **Detach-key collision:** Ctrl-\ (term-replay's default detach) is
   asciinema's pause key, so watchers under asciinema use `-e ^A` —
   detach with Ctrl-A to end a recording/stream.
