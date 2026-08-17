@@ -29,7 +29,9 @@ Cast files combine a human name and a machine name:
 argument (`stream-local.sh demo 127.0.0.1:7682 uml-day-1`), is
 sanitized for filesystem safety, and is omitted from the name when not
 given. For `stream-remote.sh` it defaults to the title, so the example
-above records to `Porting-UML-to-ARM64--demo-<timestamp>.cast`.
+above records to `Porting-UML-to-ARM64--demo-<timestamp>.cast`. For
+`record.sh` the human name is the second argument — unless it ends in
+`.cast`, which is taken as an explicit output path.
 
 `stream-remote.sh` needs a one-time `asciinema auth` (open the printed
 URL while logged in to your asciinema.org account). It prints the public
