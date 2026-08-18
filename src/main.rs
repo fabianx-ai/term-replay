@@ -469,9 +469,9 @@ async fn pty_reader_task(
 const DEBUG_RAW_LOGGING: bool = true;
 const INPUT_LOGGING: bool = true;
 
-/// Get the directory for terminal replay files, checking TERM_REPLAY_DIR env var
-fn get_term_replay_dir() -> PathBuf {
-    if let Ok(dir) = std::env::var("TERM_REPLAY_DIR") {
+/// Get the directory for terminal replay files, checking PLAZA_DIR env var
+fn get_plaza_dir() -> PathBuf {
+    if let Ok(dir) = std::env::var("PLAZA_DIR") {
         PathBuf::from(dir)
     } else {
         PathBuf::from("/tmp")
@@ -487,7 +487,7 @@ fn get_socket_path_in_dir(socket_name: &str, base_dir: &Path) -> PathBuf {
 
 /// Generate socket path for a given session name
 fn get_socket_path(socket_name: &str) -> PathBuf {
-    let base_dir = get_term_replay_dir();
+    let base_dir = get_plaza_dir();
     get_socket_path_in_dir(socket_name, &base_dir)
 }
 
@@ -500,7 +500,7 @@ fn get_log_path_in_dir(socket_name: &str, base_dir: &Path) -> PathBuf {
 
 /// Generate main log path for a given session name
 fn get_log_path(socket_name: &str) -> PathBuf {
-    let base_dir = get_term_replay_dir();
+    let base_dir = get_plaza_dir();
     get_log_path_in_dir(socket_name, &base_dir)
 }
 
@@ -513,7 +513,7 @@ fn get_debug_raw_log_path_in_dir(socket_name: &str, base_dir: &Path) -> PathBuf 
 
 /// Generate debug raw log path for a given session name
 fn get_debug_raw_log_path(socket_name: &str) -> PathBuf {
-    let base_dir = get_term_replay_dir();
+    let base_dir = get_plaza_dir();
     get_debug_raw_log_path_in_dir(socket_name, &base_dir)
 }
 
@@ -526,7 +526,7 @@ fn get_input_log_path_in_dir(socket_name: &str, base_dir: &Path) -> PathBuf {
 
 /// Generate input log path for a given session name
 fn get_input_log_path(socket_name: &str) -> PathBuf {
-    let base_dir = get_term_replay_dir();
+    let base_dir = get_plaza_dir();
     get_input_log_path_in_dir(socket_name, &base_dir)
 }
 
@@ -592,7 +592,7 @@ fn get_pid_file_path_in_dir(socket_name: &str, base_dir: &Path) -> PathBuf {
 
 /// Generate PID file path for a given session name
 fn get_pid_file_path(socket_name: &str) -> PathBuf {
-    let base_dir = get_term_replay_dir();
+    let base_dir = get_plaza_dir();
     get_pid_file_path_in_dir(socket_name, &base_dir)
 }
 
@@ -985,7 +985,7 @@ struct Cli {
 enum Commands {
     /// Start the persistent terminal server
     Server {
-        /// Set the socket name (default: term-replay). Creates {name}.sock and {name}.log
+        /// Set the socket name (default: plaza). Creates {name}.sock and {name}.log
         #[arg(short = 'S', long = "socket-name", value_name = "NAME")]
         socket_name: Option<String>,
         /// Custom command to run instead of bash (default: ["bash"])
@@ -997,7 +997,7 @@ enum Commands {
         /// Set the detach character (default: Ctrl-\). Use '^?' for DEL, '^X' for Ctrl-X
         #[arg(short = 'e', long = "escape", value_name = "CHAR")]
         detach_char: Option<String>,
-        /// Set the socket name (default: term-replay). Connects to {name}.sock
+        /// Set the socket name (default: plaza). Connects to {name}.sock
         #[arg(short = 'S', long = "socket-name", value_name = "NAME")]
         socket_name: Option<String>,
     },
@@ -1007,7 +1007,7 @@ enum Commands {
         /// Set the detach character (default: Ctrl-\). Use '^?' for DEL, '^X' for Ctrl-X
         #[arg(short = 'e', long = "escape", value_name = "CHAR")]
         detach_char: Option<String>,
-        /// Set the socket name (default: term-replay). Connects to {name}.sock
+        /// Set the socket name (default: plaza). Connects to {name}.sock
         #[arg(short = 'S', long = "socket-name", value_name = "NAME")]
         socket_name: Option<String>,
     },
@@ -1684,7 +1684,7 @@ async fn main() -> Result<()> {
     // Initialize logging based on environment variables
     // Defaults to ERROR level for clean server operation while still showing critical issues
     // Set RUST_LOG environment variable to control logging level
-    // Examples: RUST_LOG=info, RUST_LOG=debug, RUST_LOG=term_replay=debug
+    // Examples: RUST_LOG=info, RUST_LOG=debug, RUST_LOG=plaza=debug
     let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| "error".to_string());
 
     tracing_subscriber::fmt().with_env_filter(log_level).init();
@@ -1695,7 +1695,7 @@ async fn main() -> Result<()> {
             socket_name,
             command,
         } => {
-            let session_name = socket_name.unwrap_or_else(|| "term-replay".to_string());
+            let session_name = socket_name.unwrap_or_else(|| "plaza".to_string());
             let cmd = if command.is_empty() {
                 vec!["bash".to_string(), "-l".to_string()]
             } else {
@@ -1712,7 +1712,7 @@ async fn main() -> Result<()> {
             } else {
                 0x1C // Default: Ctrl-\
             };
-            let session_name = socket_name.unwrap_or_else(|| "term-replay".to_string());
+            let session_name = socket_name.unwrap_or_else(|| "plaza".to_string());
             client_main(detach_byte, &session_name, false).await
         }
         Commands::Watch {
@@ -1724,7 +1724,7 @@ async fn main() -> Result<()> {
             } else {
                 0x1C // Default: Ctrl-\
             };
-            let session_name = socket_name.unwrap_or_else(|| "term-replay".to_string());
+            let session_name = socket_name.unwrap_or_else(|| "plaza".to_string());
             client_main(detach_byte, &session_name, true).await
         }
     };
@@ -2140,9 +2140,9 @@ mod tests {
     }
 
     #[test]
-    fn test_term_replay_dir_environment_variable() {
-        // Test that TERM_REPLAY_DIR environment variable is respected
-        let old_value = std::env::var("TERM_REPLAY_DIR").ok();
+    fn test_plaza_dir_environment_variable() {
+        // Test that PLAZA_DIR environment variable is respected
+        let old_value = std::env::var("PLAZA_DIR").ok();
         let custom_dir = "/var/run/user/1000";
 
         // SAFETY: Setting environment variables in tests is safe as long as:
@@ -2151,7 +2151,7 @@ mod tests {
         // 3. This is a single-threaded test operation
         // Note: This can still race with parallel tests, but that's an acceptable test limitation
         unsafe {
-            std::env::set_var("TERM_REPLAY_DIR", custom_dir);
+            std::env::set_var("PLAZA_DIR", custom_dir);
         }
 
         let socket_path = get_socket_path("env-test");
@@ -2180,8 +2180,8 @@ mod tests {
         // SAFETY: Same safety rationale as above - restoring original state
         unsafe {
             match old_value {
-                Some(value) => std::env::set_var("TERM_REPLAY_DIR", value),
-                None => std::env::remove_var("TERM_REPLAY_DIR"),
+                Some(value) => std::env::set_var("PLAZA_DIR", value),
+                None => std::env::remove_var("PLAZA_DIR"),
             }
         }
     }
@@ -2189,11 +2189,11 @@ mod tests {
     #[test]
     fn test_default_session_name() {
         // Test default session name behavior - no environment manipulation needed
-        let socket_path = get_socket_path("term-replay");
-        let log_path = get_log_path("term-replay");
+        let socket_path = get_socket_path("plaza");
+        let log_path = get_log_path("plaza");
 
-        assert!(socket_path.to_string_lossy().ends_with("term-replay.sock"));
-        assert!(log_path.to_string_lossy().ends_with("term-replay.log"));
+        assert!(socket_path.to_string_lossy().ends_with("plaza.sock"));
+        assert!(log_path.to_string_lossy().ends_with("plaza.log"));
     }
 
     #[test]
