@@ -1419,25 +1419,6 @@ async fn handle_client(
         }
     }
 
-    // Nudge the running app to repaint for the newly attached client
-    // (dtach's winch trick): full-screen apps don't redraw on their own,
-    // and their output is not in the history log (alternate screen is
-    // filtered), so signal the pty's foreground process group directly.
-    // A resize escape sequence would not be enough — the kernel only
-    // delivers SIGWINCH when the size actually changes.
-    if let Some(pty) = &pty_async {
-        match nix::unistd::tcgetpgrp(pty.get_ref()) {
-            Ok(pgrp) if pgrp.as_raw() > 0 => {
-                match nix::sys::signal::killpg(pgrp, nix::sys::signal::Signal::SIGWINCH) {
-                    Ok(()) => tracing::debug!("Sent SIGWINCH to pgrp {} for redraw", pgrp),
-                    Err(e) => tracing::debug!("Redraw SIGWINCH to pgrp {} failed: {}", pgrp, e),
-                }
-            }
-            Ok(pgrp) => tracing::debug!("No foreground pgrp for redraw (got {})", pgrp),
-            Err(e) => tracing::debug!("tcgetpgrp for redraw failed: {}", e),
-        }
-    }
-
     tracing::debug!("🔄 Starting client event loop...");
     let mut loop_count = 0;
     loop {
