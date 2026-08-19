@@ -1,0 +1,83 @@
+# asciinema helpers for term-replay
+
+Stream and/or record a term-replay session with [asciinema](https://asciinema.org)
+(CLI 3.x — Ubuntu's apt packages 2.x, which cannot stream; use
+`cargo install --locked asciinema`). Both `term-replay` and `asciinema`
+must be on PATH.
+
+Viewers through these helpers are **read-only twice over**: the scripts
+attach with `term-replay watch` (input is discarded by term-replay
+itself), and an asciinema stream is a one-way broadcast with no input
+channel at all.
+
+## Quickstart
+
+```sh
+# The session being streamed (e.g. what kimi works in):
+./start-session.sh demo bash -l
+
+# Then pick any combination:
+./attach.sh demo          # drive the session (read-write, detach: Ctrl-\)
+./watch.sh demo           # look over the shoulder (read-only)
+./record.sh demo          # -> ~/casts/demo-<timestamp>.cast
+./stream-local.sh demo    # live at http://127.0.0.1:7682/ + recording
+./stream-remote.sh demo "Porting UML to ARM64"   # PUBLIC stream + recording
+./stop-stream.sh demo     # stop streams/recordings; session keeps running
+```
+
+`start-session.sh`, `stream-local.sh` and `stream-remote.sh` run in the
+background by default, logging to `$TERM_REPLAY_DIR/<session>-<script>.log`;
+pass `-f` (any position) to run in the foreground instead.
+`stream-remote.sh` prints the public stream URL in both modes.
+
+A session keeps one stable public URL across stream restarts: the first
+background `stream-remote.sh` run saves the server-allocated stream ID
+to `~/.config/term-replay/streams/<session>.stream-id` (override the
+directory with `STREAM_ID_DIR`) and later runs reuse it. Delete the ID
+file to get a fresh URL.
+
+`stop-stream.sh` SIGTERMs this user's asciinema processes watching the
+session (exact `-S` match), letting them close streams and finalize
+casts. `-n` as second argument lists what would be stopped without
+stopping it. Stop a background session server via the PID in
+`$TERM_REPLAY_DIR/<session>.pid`.
+
+Cast files combine a human name and a machine name:
+`[human]--[session]-[timestamp].cast`. The human part is the third
+argument (`stream-local.sh demo 127.0.0.1:7682 uml-day-1`), is
+sanitized for filesystem safety, and is omitted from the name when not
+given. For `stream-remote.sh` it defaults to the title, so the example
+above records to `Porting-UML-to-ARM64--demo-<timestamp>.cast`. For
+`record.sh` the human name is the second argument — unless it ends in
+`.cast`, which is taken as an explicit output path.
+
+`stream-remote.sh` needs a one-time `asciinema auth` (open the printed
+URL while logged in to your asciinema.org account). It prints the public
+stream URL when it starts.
+
+## Knobs (environment variables)
+
+| Variable          | Default                             | Meaning                        |
+|-------------------|-------------------------------------|--------------------------------|
+| `TERM_REPLAY_DIR` | `~/.term-replay`                    | sockets + session history logs (durable, keep it short) |
+| `WINDOW_SIZE`     | `120x30`                            | fixed stream/recording size    |
+| `CAST_DIR`        | `~/casts`                           | where recordings land          |
+
+## Gotchas these scripts already handle
+
+- **Socket path length:** Unix sockets cap at ~108 bytes (`SUN_LEN`);
+  `TERM_REPLAY_DIR` defaults to the short `~/.term-replay`, and
+  common.sh warns when an override gets close to the limit.
+- **Durable history:** session logs (the replay history) live in
+  `TERM_REPLAY_DIR` next to the sockets — keep it on real storage, not
+  tmpfs like `$XDG_RUNTIME_DIR`, or history vanishes on reboot.
+- **Detach-key collision:** Ctrl-\ (term-replay's default detach) is
+  asciinema's pause key, so watchers under asciinema use `-e ^A` —
+  detach with Ctrl-A to end a recording/stream.
+- **0x0 terminals:** without `--window-size`, asciinema's stream relay
+  dies silently when started from a headless/0x0 pty and every web
+  viewer gets an instant disconnect.
+- **Recording scope:** a recording starts with the session history
+  term-replay replays at attach (a burst at t=0) and covers only from
+  the moment the script starts — start streaming/recording before the
+  interesting work begins.

@@ -341,12 +341,7 @@ async fn pty_reader_task(
             unsafe {
                 let result = libc::read(fd, buf.as_mut_ptr() as *mut libc::c_void, buf.len());
                 if result == -1 {
-                    let errno = *libc::__error();
-                    if errno == libc::EAGAIN || errno == libc::EWOULDBLOCK {
-                        return Err(std::io::Error::from_raw_os_error(errno));
-                    } else {
-                        return Err(std::io::Error::from_raw_os_error(errno));
-                    }
+                    return Err(std::io::Error::last_os_error());
                 }
                 Ok(result as usize)
             }
@@ -1006,6 +1001,16 @@ enum Commands {
         #[arg(short = 'S', long = "socket-name", value_name = "NAME")]
         socket_name: Option<String>,
     },
+    /// Watch the persistent terminal server (read-only: input and window
+    /// resizes are never forwarded to the session)
+    Watch {
+        /// Set the detach character (default: Ctrl-\). Use '^?' for DEL, '^X' for Ctrl-X
+        #[arg(short = 'e', long = "escape", value_name = "CHAR")]
+        detach_char: Option<String>,
+        /// Set the socket name (default: term-replay). Connects to {name}.sock
+        #[arg(short = 'S', long = "socket-name", value_name = "NAME")]
+        socket_name: Option<String>,
+    },
 }
 
 // SERVER LOGIC
@@ -1466,12 +1471,7 @@ async fn handle_client(
                                     unsafe {
                                         let result = libc::write(fd, data_to_forward.as_ptr() as *const libc::c_void, data_to_forward.len());
                                         if result == -1 {
-                                            let errno = *libc::__error();
-                                            if errno == libc::EAGAIN || errno == libc::EWOULDBLOCK {
-                                                return Err(std::io::Error::from_raw_os_error(errno));
-                                            } else {
-                                                return Err(std::io::Error::from_raw_os_error(errno));
-                                            }
+                                            return Err(std::io::Error::last_os_error());
                                         }
                                         Ok(result as usize)
                                     }
@@ -1527,7 +1527,7 @@ async fn handle_client(
 }
 
 // CLIENT LOGIC
-async fn client_main(detach_char: u8, session_name: &str) -> Result<()> {
+async fn client_main(detach_char: u8, session_name: &str, read_only: bool) -> Result<()> {
     // Initialize terminal state
     let mut terminal_state = TerminalState::new()?;
     if !terminal_state.is_terminal_available() {
@@ -1579,7 +1579,7 @@ async fn client_main(detach_char: u8, session_name: &str) -> Result<()> {
             // Handle SIGWINCH directly
             _ = sigwinch.recv() => {
                 let new_size = get_terminal_size();
-                if window_manager.update_size(new_size) {
+                if window_manager.update_size(new_size) && !read_only {
                     tracing::debug!("Window size changed: {}x{}", new_size.cols, new_size.rows);
 
                     // Send window resize escape sequence to server
@@ -1613,7 +1613,7 @@ async fn client_main(detach_char: u8, session_name: &str) -> Result<()> {
                 // Check for detach character in input
                 if let Some(detach_pos) = input_data.iter().position(|&b| b == detach_char) {
                     // Send any data before the detach key
-                    if detach_pos > 0 {
+                    if detach_pos > 0 && !read_only {
                         if let Err(e) = server_writer.write_all(&input_data[..detach_pos]).await {
                             tracing::error!("Failed to write to server: {}", e);
                         }
@@ -1624,6 +1624,12 @@ async fn client_main(detach_char: u8, session_name: &str) -> Result<()> {
                     print!("\x1b[999H\r\n[detached]\r\n");
                     std::io::Write::flush(&mut std::io::stdout())?;
                     break;
+                }
+
+                // Read-only watchers only scan for the detach key; everything
+                // else typed locally is discarded, never sent to the session
+                if read_only {
+                    continue;
                 }
 
                 // No detach key found, send all data to server
@@ -1707,7 +1713,19 @@ async fn main() -> Result<()> {
                 0x1C // Default: Ctrl-\
             };
             let session_name = socket_name.unwrap_or_else(|| "term-replay".to_string());
-            client_main(detach_byte, &session_name).await
+            client_main(detach_byte, &session_name, false).await
+        }
+        Commands::Watch {
+            detach_char,
+            socket_name,
+        } => {
+            let detach_byte = if let Some(char_str) = detach_char {
+                parse_detach_char(&char_str)?
+            } else {
+                0x1C // Default: Ctrl-\
+            };
+            let session_name = socket_name.unwrap_or_else(|| "term-replay".to_string());
+            client_main(detach_byte, &session_name, true).await
         }
     };
 
