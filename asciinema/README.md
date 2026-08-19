@@ -1,12 +1,12 @@
-# asciinema helpers for term-replay
+# asciinema helpers for plaza
 
-Stream and/or record a term-replay session with [asciinema](https://asciinema.org)
+Stream and/or record a plaza session with [asciinema](https://asciinema.org)
 (CLI 3.x — Ubuntu's apt packages 2.x, which cannot stream; use
-`cargo install --locked asciinema`). Both `term-replay` and `asciinema`
+`cargo install --locked asciinema`). Both `plaza` and `asciinema`
 must be on PATH.
 
 Viewers through these helpers are **read-only twice over**: the scripts
-attach with `term-replay watch` (input is discarded by term-replay
+attach with `plaza watch` (input is discarded by plaza
 itself), and an asciinema stream is a one-way broadcast with no input
 channel at all.
 
@@ -26,13 +26,13 @@ channel at all.
 ```
 
 `start-session.sh`, `stream-local.sh` and `stream-remote.sh` run in the
-background by default, logging to `$TERM_REPLAY_DIR/<session>-<script>.log`;
+background by default, logging to `$PLAZA_DIR/<session>-<script>.log`;
 pass `-f` (any position) to run in the foreground instead.
 `stream-remote.sh` prints the public stream URL in both modes.
 
 A session keeps one stable public URL across stream restarts: the first
 background `stream-remote.sh` run saves the server-allocated stream ID
-to `~/.config/term-replay/streams/<session>.stream-id` (override the
+to `~/.config/plaza/streams/<session>.stream-id` (override the
 directory with `STREAM_ID_DIR`) and later runs reuse it. Delete the ID
 file to get a fresh URL.
 
@@ -40,7 +40,7 @@ file to get a fresh URL.
 session (exact `-S` match), letting them close streams and finalize
 casts. `-n` as second argument lists what would be stopped without
 stopping it. Stop a background session server via the PID in
-`$TERM_REPLAY_DIR/<session>.pid`.
+`$PLAZA_DIR/<session>.pid`.
 
 Cast files combine a human name and a machine name:
 `[human]--[session]-[timestamp].cast`. The human part is the third
@@ -59,25 +59,25 @@ stream URL when it starts.
 
 | Variable          | Default                             | Meaning                        |
 |-------------------|-------------------------------------|--------------------------------|
-| `TERM_REPLAY_DIR` | `~/.term-replay`                    | sockets + session history logs (durable, keep it short) |
+| `PLAZA_DIR` | `~/.plaza`                    | sockets + session history logs (durable, keep it short) |
 | `WINDOW_SIZE`     | `120x30`                            | fixed stream/recording size    |
 | `CAST_DIR`        | `~/casts`                           | where recordings land          |
 
 ## Gotchas these scripts already handle
 
 - **Socket path length:** Unix sockets cap at ~108 bytes (`SUN_LEN`);
-  `TERM_REPLAY_DIR` defaults to the short `~/.term-replay`, and
+  `PLAZA_DIR` defaults to the short `~/.plaza`, and
   common.sh warns when an override gets close to the limit.
 - **Durable history:** session logs (the replay history) live in
-  `TERM_REPLAY_DIR` next to the sockets — keep it on real storage, not
+  `PLAZA_DIR` next to the sockets — keep it on real storage, not
   tmpfs like `$XDG_RUNTIME_DIR`, or history vanishes on reboot.
-- **Detach-key collision:** Ctrl-\ (term-replay's default detach) is
+- **Detach-key collision:** Ctrl-\ (plaza's default detach) is
   asciinema's pause key, so watchers under asciinema use `-e ^A` —
   detach with Ctrl-A to end a recording/stream.
 - **0x0 terminals:** without `--window-size`, asciinema's stream relay
   dies silently when started from a headless/0x0 pty and every web
   viewer gets an instant disconnect.
 - **Recording scope:** a recording starts with the session history
-  term-replay replays at attach (a burst at t=0) and covers only from
+  plaza replays at attach (a burst at t=0) and covers only from
   the moment the script starts — start streaming/recording before the
   interesting work begins.

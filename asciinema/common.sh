@@ -19,18 +19,18 @@ unset _a _args
 # so it must be durable storage, not tmpfs, or history dies with a
 # reboot. It must also stay short: SUN_LEN caps socket paths at ~108
 # bytes, deep directories fail to bind.
-export TERM_REPLAY_DIR="${TERM_REPLAY_DIR:-$HOME/.term-replay}"
-mkdir -p "$TERM_REPLAY_DIR"
-if [ "${#TERM_REPLAY_DIR}" -gt 80 ]; then
-    echo "warning: TERM_REPLAY_DIR is ${#TERM_REPLAY_DIR} chars; socket" \
+export PLAZA_DIR="${PLAZA_DIR:-$HOME/.plaza}"
+mkdir -p "$PLAZA_DIR"
+if [ "${#PLAZA_DIR}" -gt 80 ]; then
+    echo "warning: PLAZA_DIR is ${#PLAZA_DIR} chars; socket" \
          "paths near 108 bytes fail to bind (SUN_LEN)" >&2
 fi
 
-SESSION="${1:-term-replay}"
+SESSION="${1:-plaza}"
 
-# Ctrl-\ (term-replay's default detach key) is asciinema's own
+# Ctrl-\ (plaza's default detach key) is asciinema's own
 # pause/resume key, so inside asciinema the watcher detaches with Ctrl-A.
-WATCH_CMD="term-replay watch -e ^A -S $SESSION"
+WATCH_CMD="plaza watch -e ^A -S $SESSION"
 
 # A fixed size keeps the stream and recording stable regardless of the
 # local terminal, and sidesteps asciinema's stream relay dying on 0x0
@@ -63,7 +63,7 @@ require() {
     }
 }
 
-require term-replay
+require plaza
 require asciinema
 
 # Launch "$@" in the background, logging to $1. Prints the PID and

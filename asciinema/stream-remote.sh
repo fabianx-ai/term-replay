@@ -26,8 +26,8 @@ CAST="$(new_cast_path "${3:-${2:-}}")"
 
 # Reuse the stream ID across restarts so a session keeps one stable
 # public URL. First background run saves the server-allocated ID; the
-# ID file survives reboots (unlike $TERM_REPLAY_DIR on tmpfs).
-STREAM_ID_DIR="${STREAM_ID_DIR:-$HOME/.config/term-replay/streams}"
+# ID file survives reboots (unlike $PLAZA_DIR on tmpfs).
+STREAM_ID_DIR="${STREAM_ID_DIR:-$HOME/.config/plaza/streams}"
 mkdir -p "$STREAM_ID_DIR"
 ID_FILE="$STREAM_ID_DIR/$SESSION.stream-id"
 REMOTE_FLAG="--stream-remote"
@@ -43,7 +43,7 @@ if [ "$FOREGROUND" = 1 ]; then
     exec asciinema session "$REMOTE_FLAG" --output-file "$CAST" \
         --window-size "$WINDOW_SIZE" -t "$TITLE" -c "$WATCH_CMD"
 fi
-LOG="$TERM_REPLAY_DIR/$SESSION-stream-remote.log"
+LOG="$PLAZA_DIR/$SESSION-stream-remote.log"
 # Explicit --headless: without it a backgrounded asciinema that still
 # has a controlling TTY paints the session onto the launching terminal.
 launch_background "$LOG" \
